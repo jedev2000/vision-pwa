@@ -1,79 +1,107 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Image Upload and Groq API Call</title>
+  <title>Image Processing with Groq API</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      text-align: center;
+    }
+    #preview {
+      max-width: 100%;
+      margin-top: 10px;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
+  <h1>Image Processing with Groq API</h1>
   <input type="file" accept="image/*" capture="environment" id="cameraInput">
   <br>
   <img id="preview" src="" alt="Image preview will appear here">
   <div id="result"></div>
 
   <script>
-    // Listen for image input changes
-    document.getElementById('cameraInput').addEventListener('change', event => {
-      const file = event.target.files[0];
-      if (file) {
-        // Display a preview of the image
-        const reader = new FileReader();
-        reader.onload = e => {
-          document.getElementById('preview').src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-
-        // Prepare the image to be sent to the vision API
-        const formData = new FormData();
-        formData.append('image', file);
-
-        // Show a processing message
-        document.getElementById('result').textContent = 'Processing image...';
-
-        // Define your payload here (example payload, adjust as needed)
+    import { z } from "zod";
+    import { Groq as GroqClient } from "groq-sdk";
+    var groq = new GroqClient({
+      apiKey: "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"
+    });
+    var animalIdentificationSchema = z.object({
+      imageData: z.string()
+    });
+    // Async function to process the image data with the Groq API
+    async function processImage(imageData) {
+      try {
+        console.log("Processing image data for identification...");
+        // Remove the data URL header if present to obtain only the base64 data
+        const base64Image = imageData.split(",")[1] || imageData;
+        console.log("Making request to Groq API...");
+        
+        // Construct the payload using your chosen model and prompt:
         const payload = {
-          model: "llama-3.2-11b-vision-preview",
+          model: "llama-3.2-90b-vision-preview",
           messages: [
             {
               role: "user",
               content: [
-                { type: "text", text: "What's in this image?" },
-                { type: "image_url", image_url: { url: /* Use base64 image or URL here */ "" } }
+                {
+                  type: "text",
+                  text: "Please identify the animal breed or the car model (with estimated price) in this image. Provide a concise response focusing only on the breed identification."
+                },
+                {
+                  type: "image_url",
+                  image_url: {
+                    // Construct a data URI from the base64 image
+                    url: `data:image/jpeg;base64,${base64Image}`
+                  }
+                }
               ]
             }
           ],
-          temperature: 1,
-          top_p: 1,
-          stream: false,
-          stop: null
+          max_tokens: 150  // Updated parameter for token limit
         };
 
-        // Replace the URL below with your actual API endpoint
-        fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer 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'  // Replace with your actual API key
-          },
-          body: JSON.stringify(payload)
-        })
-        .then(response => {
-          console.log("HTTP status:", response.status);
-          return response.json();
-        })
-        .then(data => {
-          console.log('Response from Groq:', data);
-          // Update your UI with the result:
-          document.getElementById('result').textContent = data.choices 
-            ? data.choices[0].message 
-            : "Unexpected response format.";
-        })
-        .catch(error => {
-          console.error('Error calling Groq API:', error);
-          document.getElementById('result').textContent = 'Error processing image.';
-        });
+        // Make the API call using the Groq client library
+        const response = await groq.chat.completions.create(payload);
+        console.log("Groq API response:", response);
+        // Extract the answer from the response (adjust if the response structure changes)
+        return response.choices[0].message.content;
+      } catch (error) {
+        console.error("Error calling Groq API:", error);
+        throw error;
       }
-    });  // <-- This closes the event listener callback and the addEventListener call
+    }
+
+    // Listen for image input changes
+    document.getElementById('cameraInput').addEventListener('change', async event => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = async e => {
+          const imageData = e.target.result;
+          // Display the image preview
+          document.getElementById('preview').src = imageData;
+          // Show a processing message
+          document.getElementById('result').textContent = 'Processing image...';
+          try {
+            // Process the image and get the answer from the Groq API
+            const answer = await processImage(imageData);
+            document.getElementById('result').textContent = answer;
+          } catch (error) {
+            document.getElementById('result').textContent = 'Error processing image.';
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
   </script>
 </body>
 </html>
