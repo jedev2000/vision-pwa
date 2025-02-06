@@ -72,45 +72,25 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer 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'  // Replace YOUR_API_KEY with your actual key
+            'Authorization': 'Bearer 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'  // Replace with your actual API key
           },
-          body: JSON.stringify({
-            // The request body should follow Groq's API spec.
-            model: "llama-3.2-90b-vision-preview",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  {
-                    type: "text",
-                    text: "What's in this image?"
-                  },
-                  {
-                    type: "image_url",
-                    image_url: {
-                      url: base64Image // or however you need to provide the image info
-                    }
-                  }
-                ]
-              }
-            ],
-            temperature: 1,
-            top_p: 1,
-            stream: false,
-            stop: null
-          })
+          body: JSON.stringify(payload)
         })
-        .then(response => response.json())
+        .then(response => {
+          console.log("HTTP status:", response.status);
+          return response.json();
+        })
         .then(data => {
-          // Assume the API returns a JSON with a "result" property
-          document.getElementById('result').textContent = data.result || 'No result returned.';
+          console.log('Response from Groq:', data);
+          // Update your UI with the result:
+          document.getElementById('result').textContent = data.choices 
+            ? data.choices[0].message 
+            : "Unexpected response format.";
         })
         .catch(error => {
-          console.error('Error:', error);
+          console.error('Error calling Groq API:', error);
           document.getElementById('result').textContent = 'Error processing image.';
         });
-      }
-    });
   </script>
 </body>
 </html>
