@@ -1,54 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <!-- Ensure proper scaling on mobile devices -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vision Analysis PWA</title>
-  <!-- Link to the Web App Manifest -->
-  <link rel="manifest" href="manifest.json">
-  <style>
-    body {
-      font-family: sans-serif;
-      margin: 20px;
-      text-align: center;
-    }
-    #preview {
-      max-width: 100%;
-      margin-top: 10px;
-    }
-    #result {
-      margin-top: 20px;
-      font-weight: bold;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Image Upload and Groq API Call</title>
 </head>
 <body>
-  <h1>Vision Analysis PWA</h1>
-  
-  <!-- Input for capturing an image from the camera -->
   <input type="file" accept="image/*" capture="environment" id="cameraInput">
   <br>
-  <!-- Preview of the selected image -->
   <img id="preview" src="" alt="Image preview will appear here">
-  
-  <!-- Div where the result will be displayed -->
   <div id="result"></div>
-  
-  <script>
-    // Register the service worker for offline support and PWA features
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js')
-          .then(registration => {
-            console.log('ServiceWorker registered with scope:', registration.scope);
-          })
-          .catch(error => {
-            console.error('ServiceWorker registration failed:', error);
-          });
-      });
-    }
 
+  <script>
     // Listen for image input changes
     document.getElementById('cameraInput').addEventListener('change', event => {
       const file = event.target.files[0];
@@ -66,6 +29,24 @@
 
         // Show a processing message
         document.getElementById('result').textContent = 'Processing image...';
+
+        // Define your payload here (example payload, adjust as needed)
+        const payload = {
+          model: "llama-3.2-11b-vision-preview",
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: "What's in this image?" },
+                { type: "image_url", image_url: { url: /* Use base64 image or URL here */ "" } }
+              ]
+            }
+          ],
+          temperature: 1,
+          top_p: 1,
+          stream: false,
+          stop: null
+        };
 
         // Replace the URL below with your actual API endpoint
         fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -91,6 +72,8 @@
           console.error('Error calling Groq API:', error);
           document.getElementById('result').textContent = 'Error processing image.';
         });
+      }
+    });  // <-- This closes the event listener callback and the addEventListener call
   </script>
 </body>
 </html>
