@@ -68,10 +68,38 @@
         document.getElementById('result').textContent = 'Processing image...';
 
         // Replace the URL below with your actual API endpoint
-		fetch('http://192.168.100.28:5000/analyze', {  // Replace YOUR_SERVER_IP and port if needed
-  		method: 'POST',
-  		body: formData
-		})
+        fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer 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'  // Replace YOUR_API_KEY with your actual key
+          },
+          body: JSON.stringify({
+            // The request body should follow Groq's API spec.
+            model: "llama-3.2-90b-vision-preview",
+            messages: [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: "What's in this image?"
+                  },
+                  {
+                    type: "image_url",
+                    image_url: {
+                      url: base64Image // or however you need to provide the image info
+                    }
+                  }
+                ]
+              }
+            ],
+            temperature: 1,
+            top_p: 1,
+            stream: false,
+            stop: null
+          })
+        })
         .then(response => response.json())
         .then(data => {
           // Assume the API returns a JSON with a "result" property
