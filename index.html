@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Ensure proper scaling on mobile devices -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vision Analysis PWA</title>
+  <!-- Link to the Web App Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      text-align: center;
+    }
+    #preview {
+      max-width: 100%;
+      margin-top: 10px;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Vision Analysis PWA</h1>
+  
+  <!-- Input for capturing an image from the camera -->
+  <input type="file" accept="image/*" capture="environment" id="cameraInput">
+  <br>
+  <!-- Preview of the selected image -->
+  <img id="preview" src="" alt="Image preview will appear here">
+  
+  <!-- Div where the result will be displayed -->
+  <div id="result"></div>
+  
+  <script>
+    // Register the service worker for offline support and PWA features
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(registration => {
+            console.log('ServiceWorker registered with scope:', registration.scope);
+          })
+          .catch(error => {
+            console.error('ServiceWorker registration failed:', error);
+          });
+      });
+    }
+
+    // Listen for image input changes
+    document.getElementById('cameraInput').addEventListener('change', event => {
+      const file = event.target.files[0];
+      if (file) {
+        // Display a preview of the image
+        const reader = new FileReader();
+        reader.onload = e => {
+          document.getElementById('preview').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+
+        // Prepare the image to be sent to the vision API
+        const formData = new FormData();
+        formData.append('image', file);
+
+        // Show a processing message
+        document.getElementById('result').textContent = 'Processing image...';
+
+        // Replace the URL below with your actual API endpoint
+		fetch('http://192.168.100.28:5000/analyze', {  // Replace YOUR_SERVER_IP and port if needed
+  		method: 'POST',
+  		body: formData
+		})
+        .then(response => response.json())
+        .then(data => {
+          // Assume the API returns a JSON with a "result" property
+          document.getElementById('result').textContent = data.result || 'No result returned.';
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          document.getElementById('result').textContent = 'Error processing image.';
+        });
+      }
+    });
+  </script>
+</body>
+</html>
